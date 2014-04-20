@@ -1,5 +1,5 @@
 #Analysis
 
-source(/findMass.R)
+source("findMass.R")
 DT<-cleanData()
-CalculateMass(DT)
+DataWithMass<-CalculateMass(DT)

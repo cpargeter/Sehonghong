@@ -61,7 +61,7 @@ Data.Table_Sub<-Data.Table[Data.Table$Flake.portion == "complete" |
                           Data.Table$Flake.portion == "proximal but nearly complete" |
                           Data.Table$ID == 1363,]
 Data.Table_Sub[Data.Table_Sub ==""]<-NA
-Data.Table_Sub<-Data.Table_Sub[!is.na(Data.Table_Sub$L.max.),]
+Data.Table_Sub<-Data.Table_Sub[!is.na(Data.Table_Sub$L.max),]
 for (i in c(7:11,17)){Data.Table_Sub[,i]<-as.numeric(Data.Table_Sub[,i])}
 
 
