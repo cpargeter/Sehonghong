@@ -203,15 +203,21 @@ Steps:
 
 Phase 2: For complete flakes, determine distribution of continuous data by Level
  - Once level is complete, examine by Unit by Level to determine if patterns exist
-    - general statistics, 
-    - Histograms or desity plots from ggplot
-    - box plots
+    - general statistics: 
+    - Histograms or desity plots from ggplot: Transform Mass, 
+    - box plots: for each by level
     - interlayer comparisons and significance tests
     - cluster analysis of correlation of lengths and widths - looking for 2:1 cluster
         - cluster by rock type as well
+          _ learn how to deal with the ggplot colors
+          
+    - get correlations for the analyses we did
     
 Phase 3: Platform analysis
 For continuous platform data - Pw, Pt, EPA.angle
     - elongation ratio (Pw/Pt): cluster or other 
+    - Regression of EPA.angle ~ Pw or Pt
+    - get r2 values for all of the comparisons
     
-Phase 4: Categorical Data
+For pieces with a length/thickness ratio ~2, what are the other categories looking like?
+
