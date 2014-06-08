@@ -170,10 +170,7 @@ MassByTypePlot<-function(df){
   
 }
 
-TypeAnalysis<-function(df){
-  Init<-Initial(df)
-  df.t<-Init[[1]]
-  f.t<-Init[[2]]
+TypeAnalysis<-function(df.t){
   
   #Create MainType which classifies the types into A, B, C, Other
   df.t$MainType<-ifelse(substr(df.t$Type, 1, 1) == "A","A",
@@ -280,6 +277,33 @@ ContAnalysis<-function(df){
   
 
 FDSD<-function(df){
+  #Shape of convexity
+  t<-split(df,list(df$Rock_Categories,df$Level))
+  #1) CCS, rfs (34)
+  #2) Dyke Material, rfs (15)
+  #3) Hornfels, rfs (2)
+  #4) CCS, mos (68)
+  #5) Dyke Material, mos (8)
+  #6) Hornfels, mos (9)
+  #7) CCS, bas (656)
+  #8) Dyke material, bas (68)
+  #9) Hornfels, bas (44)
+  
+  ChiSqTest(t,1,2) #rfs: CCS vs Dyke material
+  ChiSqTest(t,4,5) #mos: CCS vs Dyke material
+  ChiSqTest(t,4,6) #mos: CCS vs Hornfels
+  ChiSqTest(t,5,6) #mos: Dyke material vs Hornfels
+  ChiSqTest(t,7,8) #bas: CCS vs Dyke material
+  ChiSqTest(t,7,9) #bas: CCS vs Hornfels
+  ChiSqTest(t,8,9) #bas: Dyke material vs Hornfels
+  
+  ChiSqTest(t,1,4) #CCS: rfs vs mos
+  ChiSqTest(t,1,7) #CCS: rfs vs bas
+  ChiSqTest(t,4,7) #CCS: mos vs bas
+  
+  ChiSqTest(t,2,5) #Dyke material: rfs vs 
+  ChiSqTest(t,2,8)
+  
   lapply(split(df,df$Level),function(x){
     p1<-with(x,aov(Plat.Shape~Rock_Categories))
     plot(TukeyHSD(p1,"Rock_Categories"))
@@ -291,15 +315,12 @@ FDSD<-function(df){
     TukeyHSD(p1,"Level")})
   
 }
-Initial<-function(df){
-  df$Level<-factor(df$Level)
-  df.t<-df[df$Level %in% c("rfs","mos","bas"),]
-  
-  df.t<-df[df.t$Rock_Categories %in% c("CCS","Dyke material","Hornsfels"),]
-  df.t$Rock_Categories<-factor(df.t$Rock_Categories)
-  
-  f.t<-
-  list(df.t,f.t)
-}  
-  
 
+ChiSqTest<-function(t,list1,list2){
+  test.m<-merge(aggregate(ID ~ Edge,data=t[[list1]],length),
+                aggregate(ID ~ Edge,data=t[[list2]],length),by="Edge",all=T)
+  test.m[is.na(test.m)]<-0
+  rownames(test.m)<-test.m$Edge
+  test.m$Edge<-NULL
+  fisher.test(test.m)
+}
