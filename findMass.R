@@ -2,6 +2,10 @@ library(caret)
 library(foreach)
 library(data.table)
 library(stringr)
+library(plyr)
+library(raster)
+library(reshape2)
+library(agricolae)
 
 #Import Data, create ID column and create map to get map tool number to ID, clean up data
 #based on walking through database with Justin to determine missing, incorrect or unlabeled
@@ -114,9 +118,11 @@ AllData_Mass<-rbind(mappedData.test[,c(1:34,38)],mappedData.train[,c(1:34,38)],
 AllData_Mass
 }
 
-#Check of mass distribution
-PlotMass<- function(Mass){
-ggplot(Mass,aes(x = MASS)) + 
-  geom_histogram(data=subset(Mass,set == 'train'),fill = "red", alpha = 0.2) +
-  geom_histogram(data=subset(Mass,set == 'test'),fill = "blue", alpha = 0.2)
+ReduceToThreeTimePeriods<-function(df){
+  dfThree<-df[df$Level %in% c("rfs","mos","bas"),]
+  dfThree<-dfThree[dfThree$Rock_Categories %in% c("CCS","Dyke material","Hornfels"),]
+  dfThree$Level<-factor(dfThree$Level)
+  dfThree$Rock_Categories<-factor(dfThree$Rock_Categories)
+  dfThree
 }
+

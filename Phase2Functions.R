@@ -1,11 +1,3 @@
-SmallerData<-function(df){
-  dfThree<-df[df$Level %in% c("rfs","mos","bas"),]
-  dfThree<-dfThree[dfThree$Rock_Categories %in% c("CCS","Dyke material","Hornfels"),]
-  dfThree$Level<-factor(dfThree$Level)
-  dfThree$Rock_Categories<-factor(dfThree$Rock_Categories)
-  dfThree
-}
-
 StatSummary<-function(df) {
   #Split by Level (Rock[1], edge[2], Flake.portion[8])
   #summary of columns 9-19
@@ -19,17 +11,17 @@ StatSummary<-function(df) {
   stat.Table_Complete<-foreach (d = sp, .combine=rbind) %do%{
     d<-d[complete.cases(d),]
     l <- cbind(Measure = "Count",Level = d$Level[1],
-               cast(d, Rock_Categories ~ variable,subset=(Flake.portion=="complete"),length))
+               dcast(d, Rock_Categories ~ variable,length, subset=.(Flake.portion=="complete")))
     me<- cbind(Measure = "Mean",Level = d$Level[1],
-               cast(d, Rock_Categories ~ variable,subset=(Flake.portion=="complete"),mean))
+               dcast(d, Rock_Categories ~ variable,mean,subset=.(Flake.portion=="complete")))
     md<- cbind(Measure = "Median",Level = d$Level[1],
-               cast(d, Rock_Categories ~ variable,subset=(Flake.portion=="complete"),median))
+               dcast(d, Rock_Categories ~ variable,median,subset=.(Flake.portion=="complete")))
     sd<- cbind(Measure = "St Dev",Level = d$Level[1],
-               cast(d, Rock_Categories ~ variable,subset=(Flake.portion=="complete"),function(x){
-                 ifelse(length(x) > 2,sd(x),0)}))
+               dcast(d, Rock_Categories ~ variable,function(x){
+                 ifelse(length(x) > 2,sd(x),0)},subset=.(Flake.portion=="complete")))
     cv<-cbind(Measure = "CV",Level = d$Level[1],
-              cast(d, Rock_Categories ~ variable,subset=(Flake.portion=="complete"),function(x){
-                ifelse(length(x) > 2,cv(x),0)}))
+              dcast(d, Rock_Categories ~ variable,function(x){
+                ifelse(length(x) > 2,cv(x),0)},subset=.(Flake.portion=="complete")))
     rbind(l,me,md,sd,cv)
   }
   
@@ -44,33 +36,11 @@ StatSummary<-function(df) {
   sp<-split(df.m,df.m$Level)
   stat.Table<-foreach (d = sp, .combine=rbind) %do%{
     d<-d[complete.cases(d),]
-    l <- cbind(Measure = "Count",Level = d$Level[1],
-               cast(d, Rock_Categories ~ variable,
-                    subset=(Flake.portion=="complete" | Flake.portion =='proximal' |
-                              Flake.portion == "proximal but nearly complete"),
-                    length))
-    me<- cbind(Measure = "Mean",Level = d$Level[1],
-               cast(d, Rock_Categories ~ variable,
-                    subset=(Flake.portion=="complete"| Flake.portion =='proximal' |
-                              Flake.portion == "proximal but nearly complete"),
-                    mean))
-    md<- cbind(Measure = "Median",Level = d$Level[1],
-               cast(d, Rock_Categories ~ variable,
-                    subset=(Flake.portion=="complete"| Flake.portion =='proximal' |
-                              Flake.portion == "proximal but nearly complete"),
-                    median))
-    sd<- cbind(Measure = "St Dev",Level = d$Level[1],
-               cast(d, Rock_Categories ~ variable,
-                    subset=(Flake.portion=="complete"| Flake.portion =='proximal' |
-                              Flake.portion == "proximal but nearly complete"),
-                    function(x){
-                      ifelse(length(x) > 2,sd(x),0)}))
-    cv<-cbind(Measure = "CV",Level = d$Level[1],
-              cast(d, Rock_Categories ~ variable,
-                   subset=(Flake.portion=="complete"| Flake.portion =='proximal' |
-                             Flake.portion == "proximal but nearly complete"),
-                   function(x){
-                     ifelse(length(x) > 2,cv(x),0)}))
+    l <- cbind(Measure = "Count",Level = d$Level[1],dcast(d, Rock_Categories ~ variable,subset=.(Flake.portion=="complete" | Flake.portion =='proximal' | Flake.portion == "proximal but nearly complete"),length))
+    me<- cbind(Measure = "Mean",Level = d$Level[1],dcast(d, Rock_Categories ~ variable, subset=.(Flake.portion=="complete"| Flake.portion =='proximal' | Flake.portion == "proximal but nearly complete"), mean))
+    md<- cbind(Measure = "Median",Level = d$Level[1],dcast(d, Rock_Categories ~ variable, subset=.(Flake.portion=="complete"| Flake.portion =='proximal' | Flake.portion == "proximal but nearly complete"), median))
+    sd<- cbind(Measure = "St Dev",Level = d$Level[1],dcast(d, Rock_Categories ~ variable, subset=.(Flake.portion=="complete"| Flake.portion =='proximal' |Flake.portion == "proximal but nearly complete"), function(x){ifelse(length(x) > 2,sd(x),0)}))
+    cv<- cbind(Measure = "CV",Level = d$Level[1],dcast(d, Rock_Categories ~ variable,subset=.(Flake.portion=="complete"| Flake.portion =='proximal' |Flake.portion == "proximal but nearly complete"),function(x){ifelse(length(x) > 2,cv(x),0)}))
     rbind(l,me,md,sd,cv)
   }
   
@@ -170,37 +140,26 @@ MassByTypePlot<-function(df){
   
 }
 
-TypeAnalysis<-function(df.t){
+TypeAnalysis<-function(df){
+  df$MainType<-ifelse(substr(df$Type, 1, 1) == "A","A",
+    ifelse(substr(df$Type, 1, 1) == "B","B",
+      ifelse(substr(df$Type, 1, 1) == "C","C",
+        "Other")))
+  dt_clust<-df[,c(5,34,36,11,12,14:16,18)]
+  print(TypeProportions(df))
+  print(TypeProportions(df))
   
-  #Create MainType which classifies the types into A, B, C, Other
-  df.t$MainType<-ifelse(substr(df.t$Type, 1, 1) == "A","A",
-                        ifelse(substr(df.t$Type, 1, 1) == "B","B",
-                               ifelse(substr(df.t$Type, 1, 1) == "C","C","Other")))
-
-  #Create table by MainType
-  d<-aggregate(df.t$Rock_Categories,list(df.t$MainType,df.t$Rock_Categories,df.t$Level),
-          length)
-  colnames(d)<-c("MainType","Rock_Categories","Level","Count")
-  d<-d[,c(3,2,1,4)]
-  d<-merge(d,f.t,by=c("Rock_Categories","Level"),all.x=TRUE)
-  d<-d[order(d$Level),]
-  colnames(d)[5]<-"Total"
-  d$Proportion<-round(d$Count/d$Total,3)
-
-  #Create table by Type
-  g<-aggregate(df.t$Rock_Categories,list(df.t$Type,df.t$Rock_Categories,df.t$Level),
-             length)
-  colnames(g)<-c("Type","Rock_Categories","Level","Count")
-  g<-g[,c(3,2,1,4)]
-  g<-merge(g,f.t,by=c("Rock_Categories","Level"),all.x=TRUE)
-  g<-g[order(g$Level),]
-  colnames(g)[5]<-"Total"
-  g$Proportion<-round(g$Count/g$Total,3)
-  
-  list(d,g)
+  df.t<-df[,c(34,5,36,11,12,14:16,18)]
+  aggregate(cbind(x1, x2)~year+month, data=df1, sum, na.rm=TRUE)
+  dt<-aggregate(cbind(L.tech,W.mid,T.bulb,P.w.,P.t.,EPA.angle)~Rock_Categories+Level +MainType,data = df.t,mean,na.rm=T)
+  rownames(dt)<-paste(dt[,1],dt[,2],dt[,3])
+  d<-dist(dt)
+  clusts<-hclust(d,"cent")
+  plot(clusts, main = "Clustering by Length, Width,Bulb Thichness, Platform Width, Platform Thickness and EPA Angle",
+    xlab = "")
 }
 
-FlakingDirection<-function(df){
+FlakingProportion<-function(df){
   df<-df[!is.na(df$Dorsal.scar.pattern),]
   f.t<-aggregate(Rock~Level + Rock_Categories,data=df,FUN=length)
   
@@ -210,7 +169,10 @@ FlakingDirection<-function(df){
   d<-merge(d,f.t,by=c("Rock_Categories","Level"),all.x=TRUE)
   colnames(d)[5]<-"Total"
   d$Proportion<-round(d$Count/d$Total,3)
-  
+  d
+  dcast(d,Rock_Categories + Level ~ Dorsal.scar.pattern, value.var="Proportion")
+}
+FlakingProportionCortIncluded<-function(df){
   df<-df[!is.na(df$Cort),]
   f.t<-aggregate(Rock~Level + Rock_Categories,data=df,FUN=length)
   df$Cort60<-ifelse(df$Cort %in% c("100%","61-90%","91-99%"),"Above_60","Below_60")
@@ -222,9 +184,16 @@ FlakingDirection<-function(df){
   colnames(g)[6]<-"Total"
   g$Proportion<-round(g$Count/g$Total,3)
   g<-g[with(g,order(Rock_Categories,Level,Dorsal.scar.pattern)),]
-  list(d,g)
+  dcast(g,Rock_Categories + Level +Dorsal.scar.pattern~ Cort60, value.var="Proportion")
 }
+CortComparison<-function(df){
+  df<-df[!is.na(df$Cort),]
+  df$Cort60<-ifelse(df$Cort %in% c("100%","61-90%","91-99%"),"Above_60","Below_60")
   
+  g<-aggregate(df$Dorsal.scar.pattern,list(df$Rock_Categories,df$Level,df$Cort60),summary)
+  print(g)
+}
+
 Prep<-function(df){
   f.t<-aggregate(Rock~Level + Rock_Categories,data=df,FUN=length)
   
@@ -239,10 +208,12 @@ Prep<-function(df){
   d<-merge(d,f.t,by=c("Rock_Categories","Level"),all.x=TRUE)
   colnames(d)[5]<-"Total"
   d$Proportion<-round(d$Count/d$Total,3) 
-  d
+  d<-d[,c(1,2,3,6)]
+  dcast(d,Rock_Categories + Level ~ Prep, value.var="Proportion")
 }  
  
 ContAnalysis<-function(df){
+  
   df$Plat.Shape<-df$P.w./df$P.t.
   df$Rock_Categories<-factor(df$Rock_Categories)
   dt<-df[df$EPA.angle>0,]
@@ -251,27 +222,26 @@ ContAnalysis<-function(df){
                 function(x) c(mean =mean(x), CoefVar=cv(x))))
 
   lapply(split(dt,dt$Level),function(x){
-       p1<-with(x,aov(EPA.angle~Rock_Categories))
-       plot(TukeyHSD(p1,"Rock_Categories"))
-       TukeyHSD(p1,"Rock_Categories")})
+      p1<-with(x,aov(EPA.angle~Rock_Categories))
+      tukey.edit(TukeyHSD(p1,"Rock_Categories"),"EPA Angle","Level",x$Level[1])
+      TukeyHSD(p1,"Rock_Categories")})
 
     lapply(split(dt,dt$Rock_Categories),function(x){
       p1<-with(x,aov(EPA.angle~Level))
-      plot(TukeyHSD(p1,"Level"))
-      TukeyHSD(p1,"Level")})
-
+      tukey.edit(TukeyHSD(p1,"Level"),"EPA Angle","Rock Category",x$Rock_Categories[[1]])
+      TukeyHSD(p1,"Level")}) 
 #Platform Shape
   print(aggregate(Plat.Shape~ Rock_Categories +Level,data=df,
                 function(x) c(mean =mean(x), CoefVar=cv(x) )))
 
     lapply(split(df,df$Level),function(x){
       p1<-with(x,aov(Plat.Shape~Rock_Categories))
-      plot(TukeyHSD(p1,"Rock_Categories"))
+      tukey.edit(TukeyHSD(p1,"Rock_Categories"),"Plaform Shape","Level",x$Level[1])
       TukeyHSD(p1,"Rock_Categories")})
     
     lapply(split(df,df$Rock_Categories),function(x){
       p1<-with(x,aov(Plat.Shape~Level))
-      plot(TukeyHSD(p1,"Level"))
+      tukey.edit(TukeyHSD(p1,"Level"),"Plaform Shape","Rock Category",x$Rock_Categories[[1]])
       TukeyHSD(p1,"Level")})
 }
   
@@ -279,41 +249,45 @@ ContAnalysis<-function(df){
 FDSD<-function(df){
   #Shape of convexity
   t<-split(df,list(df$Rock_Categories,df$Level))
-  #1) CCS, rfs (34)
-  #2) Dyke Material, rfs (15)
-  #3) Hornfels, rfs (2)
-  #4) CCS, mos (68)
-  #5) Dyke Material, mos (8)
-  #6) Hornfels, mos (9)
-  #7) CCS, bas (656)
-  #8) Dyke material, bas (68)
-  #9) Hornfels, bas (44)
   
-  ChiSqTest(t,1,2) #rfs: CCS vs Dyke material
-  ChiSqTest(t,4,5) #mos: CCS vs Dyke material
-  ChiSqTest(t,4,6) #mos: CCS vs Hornfels
-  ChiSqTest(t,5,6) #mos: Dyke material vs Hornfels
-  ChiSqTest(t,7,8) #bas: CCS vs Dyke material
-  ChiSqTest(t,7,9) #bas: CCS vs Hornfels
-  ChiSqTest(t,8,9) #bas: Dyke material vs Hornfels
+  print(data.frame(rfs = c(ChiSqTest(t,1,2)$p.value, "*", "*"),
+    mos = c(round(ChiSqTest(t,4,5)$p.value,4), ChiSqTest(t,4,6)$p.value, ChiSqTest(t,5,6)$p.value),
+    bas = c(ChiSqTest(t,7,8)$p.value, ChiSqTest(t,7,9)$p.value,ChiSqTest(t,8,9)$p.value),
+  row.names=c("CCS vs Dyke material","CCS vs Hornfels","Dyke material vs Hornfels")))
+     
   
-  ChiSqTest(t,1,4) #CCS: rfs vs mos
-  ChiSqTest(t,1,7) #CCS: rfs vs bas
-  ChiSqTest(t,4,7) #CCS: mos vs bas
+  #rfs-mos, rfs-bas, mos-bas
+  data.frame(CCS=c(ChiSqTest(t,1,4)$p.value,ChiSqTest(t,1,7)$p.value,ChiSqTest(t,4,7)$p.value),
+    Dyke = c(ChiSqTest(t,2,5)$p.value, ChiSqTest(t,2,8)$p.value, ChiSqTest(t,5,8)$p.value),
+    Hornfels = c("*","*", ChiSqTest(t,6,9)$p.value),
+    row.names=c("rfs-mos", "rfs-bas", "mos-bas"))
   
-  ChiSqTest(t,2,5) #Dyke material: rfs vs 
-  ChiSqTest(t,2,8)
-  
-  lapply(split(df,df$Level),function(x){
-    p1<-with(x,aov(Plat.Shape~Rock_Categories))
-    plot(TukeyHSD(p1,"Rock_Categories"))
-    TukeyHSD(p1,"Rock_Categories")})
-  
-  lapply(split(df,df$Rock_Categories),function(x){
-    p1<-with(x,aov(Plat.Shape~Level))
-    plot(TukeyHSD(p1,"Level"))
-    TukeyHSD(p1,"Level")})
-  
+}
+
+TypeProportion<-function(df){
+  #Create MainType which classifies the types into A, B, C, Other
+  #merge the main table and the MainType which 
+  d<-aggregate(df$Rock_Categories,list(df$MainType,df$Rock_Categories,df$Level),length)
+  colnames(d)<-c("MainType","Rock_Categories","Level","Count")
+  d<-d[,c(3,2,1,4)]
+  dt<-aggregate(df$ID,list(df$Rock_Categories,df$Level),length)
+  colnames(dt)<-c("Rock_Categories","Level","Total")
+  d<-merge(d,dt,by=c("Rock_Categories","Level"),all.x=TRUE)
+  d<-d[order(d$Level),]
+  d$Proportion<-round(d$Count/d$Total,3)
+  d
+}
+
+TypeSubProportion<-function(df){
+  #Create table by Type
+  g<-aggregate(df$Rock_Categories,list(df$Type,df$Rock_Categories,df$Level),
+             length)
+  colnames(g)<-c("Type","Rock_Categories","Level","Count")
+  g<-g[,c(3,2,1,4)]
+  g<-merge(g,dt,by=c("Rock_Categories","Level"),all.x=TRUE)
+  g<-g[order(g$Level),]
+  g$Proportion<-round(g$Count/g$Total,3)
+  g
 }
 
 ChiSqTest<-function(t,list1,list2){
@@ -322,5 +296,25 @@ ChiSqTest<-function(t,list1,list2){
   test.m[is.na(test.m)]<-0
   rownames(test.m)<-test.m$Edge
   test.m$Edge<-NULL
-  fisher.test(test.m)
+  fisher.test(test.m,workspace=2e+07,hybrid=TRUE)
 }
+
+tukey.edit <- function (x,data,group,Level,...) {
+    for (i in seq_along(x)) {
+        xi <- x[[i]][, -4, drop = FALSE]
+        yvals <- nrow(xi):1
+        dev.hold()
+        on.exit(dev.flush())
+        plot(c(xi[, "lwr"], xi[, "upr"]), rep.int(yvals, 2), 
+            type = "n", axes = FALSE, xlab = "", ylab = "", main = "", ...)
+        axis(1, ...)
+        axis(2, at = nrow(xi):1, labels = dimnames(xi)[[1L]], srt = 0, ...)
+        abline(h = yvals, lty = 1, lwd = 0.5, col = "lightgray")
+        abline(v = 0, lty = 2, lwd = 0.5, ...)
+        segments(xi[, "lwr"], yvals, xi[, "upr"], yvals, ...)
+        segments(as.vector(xi), rep.int(yvals - 0.1, 3), as.vector(xi), 
+            rep.int(yvals + 0.1, 3), ...)
+        title(main = paste(group,":",Level), 
+          xlab = paste("Differences in mean levels of", data))
+        box()
+    }}

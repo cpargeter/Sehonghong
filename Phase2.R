@@ -1,14 +1,4 @@
-library(ggplot2)
-library(reshape)
-library(foreach)
-library(raster)
-library(reshape2)
-library(agricolae)
 source("Phase2Functions.R")
-
-AllData<-SmallerData(DataWithMass)
-Complete<-SmallerData(Complete)
-Proximal<-SmallerData(Proximal)
 
 Stats<-StatSummary(AllData)
   print(Stats[[1]])
@@ -16,15 +6,18 @@ Stats<-StatSummary(AllData)
 
 BasicComparisons(AllData)
 
-MassByTypePlot(AllData)
+MassByTypePlot(Complete)
 
 typeAnalysis<-TypeAnalysis(AllData)
-  print(typeAnalysis[[1]])
-  print(typeAnalysis[[2]])
 
-Flake<-FlakingDirection(Complete)
-  print(Flake[[1]])
-  print(Flake[[2]])
+FlakingProportion(Complete)
+FlakingProportionCortIncluded(Complete)
+g<- CortComparison(Complete)
+  chisq.test(c(g[1,4]),c(g[2,4]))$p.value  #CCS, rfs
+  chisq.test(c(g[3,4]),c(g[4,4]))$p.value #CCS,mos
+  chisq.test(c(g[5,4]),c(g[6,4]))$p.value #CCS bas
+  chisq.test(c(g[9,4]),c(g[10,4]))$p.value #Dyke material, bas
+  
 
 Prep(Proximal[!is.na(Proximal$P.w.) & !is.na(Proximal$P.t.),])
 

@@ -1,3 +1,9 @@
+#Comparing mass of rocks from calculations and from measurement
+PlotMass<- function(Mass){
+  ggplot(Mass,aes(x = MASS)) + 
+    geom_histogram(data=subset(Mass,set == 'train'),fill = "red", alpha = 0.2) +
+    geom_histogram(data=subset(Mass,set == 'test'),fill = "blue", alpha = 0.2)
+}
 
 #Desity Plots
 for (i in 1:length(sum_Data)){
